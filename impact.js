@@ -170,6 +170,16 @@ function initializeImpactMap() {
             })
         }).addTo(map).bindPopup('<b>Impact Point</b><br>Pretoria, South Africa');
 
+        // Asteroid marker (starts hidden, will be shown during approach)
+        const asteroidMarker = L.marker([startLat, startLon], {
+            icon: L.divIcon({
+                className: 'asteroid-marker',
+                html: '<div style="font-size: 30px; text-shadow: 0 0 10px white;">🪨</div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            })
+        });
+
         // Calculate zoom level based on crater diameter
         // Leaflet zoom levels: each level doubles the scale
         // We want the crater to be at least half the map width
@@ -194,13 +204,15 @@ function initializeImpactMap() {
         const startLat = lat + approachDistance * Math.cos(approachAngle);
         const startLon = lon + approachDistance * Math.sin(approachAngle);
 
-        // Stage 1: Approaching from space (start northeast of target)
+        // Stage 1: Approaching from space (asteroid starts far away, but keep impact site centered)
         stages.push({
             name: 'Approaching',
             description: 'Asteroid approaching Earth from space',
             zoom: spaceZoom,
-            viewLat: startLat,
-            viewLon: startLon,
+            viewLat: lat, // Keep impact site centered
+            viewLon: lon,
+            asteroidLat: startLat,
+            asteroidLon: startLon,
             circles: []
         });
 
@@ -212,16 +224,18 @@ function initializeImpactMap() {
             const easedProgress = progress * progress; // Quadratic easing - accelerates as it gets closer
             const currentZoom = spaceZoom + (impactZoom - spaceZoom) * easedProgress;
 
-            // Interpolate position along trajectory
-            const currentLat = startLat + (lat - startLat) * progress;
-            const currentLon = startLon + (lon - startLon) * progress;
+            // Interpolate asteroid position along trajectory
+            const asteroidLat = startLat + (lat - startLat) * progress;
+            const asteroidLon = startLon + (lon - startLon) * progress;
 
             stages.push({
                 name: 'Approaching',
                 description: `Closing in on impact site... (${Math.round((1 - progress) * 1000)} km)`,
                 zoom: currentZoom,
-                viewLat: currentLat,
-                viewLon: currentLon,
+                viewLat: lat, // Keep impact site centered
+                viewLon: lon,
+                asteroidLat: asteroidLat,
+                asteroidLon: asteroidLon,
                 circles: []
             });
         }
@@ -377,6 +391,20 @@ function initializeImpactMap() {
                 }).addTo(map).bindPopup(circleData.label);
                 currentCircles.push(circle);
             });
+
+            // Show/hide and move asteroid marker
+            if (stage.asteroidLat !== undefined && stage.asteroidLon !== undefined) {
+                // Asteroid is approaching
+                asteroidMarker.setLatLng([stage.asteroidLat, stage.asteroidLon]);
+                if (!map.hasLayer(asteroidMarker)) {
+                    asteroidMarker.addTo(map);
+                }
+            } else {
+                // Asteroid has impacted, hide it
+                if (map.hasLayer(asteroidMarker)) {
+                    map.removeLayer(asteroidMarker);
+                }
+            }
 
             // Smooth animated zoom with easing
             // If stage has approach path (before impact), use it
