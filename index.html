@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪨 Rock Parade - Asteroid Close Approach Feed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            background: linear-gradient(135deg, #000814 0%, #001d3d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd60a, #ff006e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #adb5bd;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffd60a;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #adb5bd;
+        }
+
+        .feed {
+            display: grid;
+            gap: 20px;
+        }
+
+        .event {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event:hover {
+            transform: translateX(5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .event.critical {
+            border-left-color: #dc2f02;
+            background: linear-gradient(90deg, rgba(220, 47, 2, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .event.high {
+            border-left-color: #ff9500;
+            background: linear-gradient(90deg, rgba(255, 149, 0, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .event.medium {
+            border-left-color: #ffd60a;
+            background: linear-gradient(90deg, rgba(255, 214, 10, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .event-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .event-date {
+            font-size: 1.2em;
+            color: #ffd60a;
+            font-weight: bold;
+        }
+
+        .event-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.85em;
+            color: #adb5bd;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1em;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .badge.hazardous {
+            background: #dc2f02;
+            color: white;
+        }
+
+        .badge.severity-critical {
+            background: #dc2f02;
+            color: white;
+        }
+
+        .badge.severity-high {
+            background: #ff9500;
+            color: white;
+        }
+
+        .badge.severity-medium {
+            background: #ffd60a;
+            color: #000;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 100px 20px;
+            font-size: 1.5em;
+            color: #adb5bd;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 100px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .no-events h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 60px;
+            color: #adb5bd;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: #ffd60a;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading::after {
+            content: '...';
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🪨 Rock Parade</h1>
+            <p class="subtitle">Near-Earth Asteroid Close Approach Feed</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-number" id="event-count">-</div>
+                    <div class="stat-label">Upcoming Events</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="closest-approach">-</div>
+                    <div class="stat-label">Closest Approach</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number" id="last-update">-</div>
+                    <div class="stat-label">Last Updated</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="feed" id="event-feed">
+            <div class="loading">Loading asteroid data</div>
+        </div>
+
+        <footer>
+            <p>Data provided by <a href="https://api.nasa.gov/" target="_blank">NASA NeoWs API</a></p>
+            <p>🌍 Distances measured in kilometers and lunar distances (1 LD = 384,400 km)</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

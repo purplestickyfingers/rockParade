@@ -1,0 +1,14 @@
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Generated data
+events.json
+
+# OS files
+.DS_Store
+*.png
