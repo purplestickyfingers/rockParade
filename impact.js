@@ -204,13 +204,13 @@ function initializeImpactMap() {
             })
         });
 
-        // Stage 1: Approaching from space (asteroid starts far away, but keep impact site centered)
+        // Stage 1: Approaching from space (show both asteroid and impact site)
         stages.push({
             name: 'Approaching',
             description: 'Asteroid approaching Earth from space',
             zoom: spaceZoom,
-            viewLat: lat, // Keep impact site centered
-            viewLon: lon,
+            viewLat: (startLat + lat) / 2, // Center between asteroid and impact
+            viewLon: (startLon + lon) / 2,
             asteroidLat: startLat,
             asteroidLon: startLon,
             circles: []
@@ -222,18 +222,31 @@ function initializeImpactMap() {
             const progress = i / approachSteps;
             // Use easing function for more natural acceleration
             const easedProgress = progress * progress; // Quadratic easing - accelerates as it gets closer
-            const currentZoom = spaceZoom + (impactZoom - spaceZoom) * easedProgress;
 
             // Interpolate asteroid position along trajectory
             const asteroidLat = startLat + (lat - startLat) * progress;
             const asteroidLon = startLon + (lon - startLon) * progress;
 
+            // Calculate center point between asteroid and impact site
+            const centerLat = (asteroidLat + lat) / 2;
+            const centerLon = (asteroidLon + lon) / 2;
+
+            // Calculate distance between asteroid and impact site
+            const distance = Math.sqrt(
+                Math.pow(asteroidLat - lat, 2) + Math.pow(asteroidLon - lon, 2)
+            );
+
+            // Adjust zoom to keep both visible (slower zoom as they get closer)
+            // When distance is large, zoom is low; when distance is small, zoom can be higher
+            const distanceZoom = Math.max(spaceZoom, Math.min(impactZoom, impactZoom - Math.log2(distance * 50)));
+            const currentZoom = spaceZoom + (distanceZoom - spaceZoom) * easedProgress;
+
             stages.push({
                 name: 'Approaching',
                 description: `Closing in on impact site... (${Math.round((1 - progress) * 1000)} km)`,
                 zoom: currentZoom,
-                viewLat: lat, // Keep impact site centered
-                viewLon: lon,
+                viewLat: centerLat, // Center between asteroid and impact
+                viewLon: centerLon,
                 asteroidLat: asteroidLat,
                 asteroidLon: asteroidLon,
                 circles: []
