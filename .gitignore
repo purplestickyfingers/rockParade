@@ -8,6 +8,7 @@ __pycache__/
 
 # Generated data
 events.json
+orbital_data.json
 
 # OS files
 .DS_Store

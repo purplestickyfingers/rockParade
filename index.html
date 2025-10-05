@@ -229,6 +229,61 @@
             content: '...';
             animation: pulse 1.5s infinite;
         }
+
+        .solar-system-viz {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .solar-system-viz h2 {
+            text-align: center;
+            color: #ffd60a;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        #solar-system-canvas {
+            display: flex;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        #solar-system-canvas canvas {
+            border-radius: 10px;
+        }
+
+        .viz-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .viz-controls button {
+            background: rgba(255, 214, 10, 0.2);
+            border: 1px solid #ffd60a;
+            color: #ffd60a;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .viz-controls button:hover {
+            background: rgba(255, 214, 10, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .viz-controls button.active {
+            background: #ffd60a;
+            color: #000;
+        }
     </style>
 </head>
 <body>
@@ -252,6 +307,18 @@
             </div>
         </header>
 
+        <div class="solar-system-viz">
+            <h2>🌌 Solar System View</h2>
+            <div id="solar-system-canvas"></div>
+            <div class="viz-controls">
+                <button id="play-pause">▶ Play</button>
+                <button id="toggle-orbits" class="active">Show Orbits</button>
+                <button id="toggle-labels">Show Labels</button>
+                <button id="toggle-asteroids" class="active">Show Asteroids</button>
+                <button id="reset-view">Reset View</button>
+            </div>
+        </div>
+
         <div class="feed" id="event-feed">
             <div class="loading">Loading asteroid data</div>
         </div>
@@ -262,6 +329,8 @@
         </footer>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="solar-system.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
