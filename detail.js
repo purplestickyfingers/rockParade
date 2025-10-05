@@ -171,6 +171,78 @@ function createImpactScenario(data) {
             </div>
 
             ${window.ImpactCalculator.createImpactMap(zones, data.name)}
+
+            ${generateJournalEntry(data.name, zones.totalDestruction)}
+        </div>
+    `;
+}
+
+function generateJournalEntry(asteroidName, destructionRadius) {
+    const stories = [
+        {
+            name: "Maya",
+            age: 16,
+            entry: `The adults have been whispering about ${asteroidName} in that particular way they do when they think we're not listening. All hushed consonants and worried glances. Rather insulting, actually, since I've been following the trajectory calculations for three weeks now. I know exactly what's coming.
+
+Mother packed the evacuation bags on Tuesday. Father said we'd leave at dawn. It's past noon now, and the bags sit by the door like abandoned pets. Nobody mentions them anymore.
+
+The sky has gone peculiar. That's the only word for it. The afternoon light tastes metallic, and there's a brightness growing in the west that shouldn't be there. Mr. Chen from next door is filming it on his phone, as if recording the end of the world might somehow make it less real. Someone down the block is crying, but most people are just standing in their gardens, watching. We're all terribly civilized about it.
+
+I've kept this journal since I was twelve. Four years of melodramatic heartbreak over boys who never noticed me, agonizing over exam results that won't matter now. I'd imagined my final entry would be profound. Something about love transcending death, or the terrible beauty of existence, or how we're all made of stardust returning home.
+
+But what I actually think is: we should have left yesterday.
+
+The light is so bright now it's burning through my
+
+` },
+        {
+            name: "Thandi",
+            age: 17,
+            entry: `Mother keeps saying it's God's will, which is both comforting and infuriating in equal measure. Father stopped arguing with her around breakfast time. Now we're all sitting in the lounge like it's Sunday afternoon, except Sundays were never quite this quiet.
+
+The television showed ${asteroidName} for days - those serious-faced scientists with their careful words. "Possible impact." "Uncertain trajectory." Then "high probability of oceanic strike." Then nothing at all. Just static. The internet died an hour ago. Even the emergency broadcasts have given up their cheerful lies.
+
+Jabu came over this morning. We've been dating for exactly three months and two days, which makes me laugh because I was counting. I was keeping track as if time would continue in its normal, ordered fashion. As if I'd get to tell our children someday about how we met in winter and fell in love by spring.
+
+We sat on the roof. His hand was warm in mine, which seemed important somehow. Worth remembering. He didn't try to say anything profound, which I appreciated. All the profound things have already been said, haven't they?
+
+Mother wants us to pray now. Father says yes. Jabu squeezes my hand.
+
+The ground is trembling. I can
+
+`},
+        {
+            name: "Lerato",
+            age: 15,
+            entry: `This is ridiculous. Writing in a journal when the world is ending is possibly the most pointless exercise in human history. And yet here I am, pen in hand, because Mrs. Van Der Merwe's voice is in my head saying "write what you feel, Lerato" as if feelings matter when you're about to be vaporized.
+
+They cancelled school on Monday. Some families left - packed their cars with photograph albums and family bibles and drove inland as if distance might save them. The rest of us stayed. Where exactly do you go when the scientists can't decide if it's the whole world ending or just our particular corner of it?
+
+Zinhle and I went to the beach yesterday. The ocean was absurdly calm, indifferent to ${asteroidName} hurtling toward it. We built a sandcastle, which was childish and perfect. We gave it turrets and a moat and everything. The tide came in and took it, the way tides do. We didn't mind.
+
+Father's workshop has gone silent. For sixteen years I've fallen asleep to the sound of him building things - cabinets, chairs, toys for the neighbor's children. Now he just sits with us, opening his mouth to speak, then closing it again. I think he wants to impart some final piece of fatherly wisdom. But what is there left to say that isn't either a lie or utterly obvious?
+
+There's that poem we read in English. "Rage, rage against the dying of the light." But I don't feel rage. I feel
+
+`}
+    ];
+
+    const story = stories[Math.floor(Math.random() * stories.length)];
+
+    return `
+        <div style="background: rgba(0,0,0,0.4); padding: 25px; border-radius: 10px; margin-top: 20px; border-left: 3px solid #ffd60a;">
+            <h3 style="font-size: 1.1em; margin-bottom: 15px; color: #ffd60a;">Final Entry</h3>
+            <p style="color: #adb5bd; font-size: 0.9em; margin-bottom: 15px; font-style: italic;">
+                AI-generated narrative from within the ${destructionRadius.toFixed(1)} km total destruction zone
+            </p>
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; font-family: 'Georgia', serif;">
+                <div style="margin-bottom: 10px; color: #adb5bd; font-size: 0.9em;">
+                    <strong>${story.name}, age ${story.age}</strong><br>
+                    Location: ${destructionRadius.toFixed(1)} km from impact site
+                </div>
+                <div style="line-height: 1.8; color: #e9ecef; white-space: pre-line; font-size: 0.95em;">
+${story.entry}                </div>
+            </div>
         </div>
     `;
 }
