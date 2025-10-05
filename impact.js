@@ -170,16 +170,6 @@ function initializeImpactMap() {
             })
         }).addTo(map).bindPopup('<b>Impact Point</b><br>Pretoria, South Africa');
 
-        // Asteroid marker (starts hidden, will be shown during approach)
-        const asteroidMarker = L.marker([startLat, startLon], {
-            icon: L.divIcon({
-                className: 'asteroid-marker',
-                html: '<div style="font-size: 30px; text-shadow: 0 0 10px white;">🪨</div>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            })
-        });
-
         // Calculate zoom level based on crater diameter
         // Leaflet zoom levels: each level doubles the scale
         // We want the crater to be at least half the map width
@@ -203,6 +193,16 @@ function initializeImpactMap() {
         const approachDistance = 20; // degrees offset at start
         const startLat = lat + approachDistance * Math.cos(approachAngle);
         const startLon = lon + approachDistance * Math.sin(approachAngle);
+
+        // Asteroid marker (starts hidden, will be shown during approach)
+        const asteroidMarker = L.marker([startLat, startLon], {
+            icon: L.divIcon({
+                className: 'asteroid-marker',
+                html: '<div style="font-size: 30px; text-shadow: 0 0 10px white;">🪨</div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            })
+        });
 
         // Stage 1: Approaching from space (asteroid starts far away, but keep impact site centered)
         stages.push({
