@@ -17,10 +17,19 @@ let endDate = null;
 let currentDateOffset = -14; // Days from start date (starts 2 weeks before)
 let isPlaying = false;
 
-// Sun-centered view
+// View mode and zoom animation
+let isEarthCentered = false; // Start with sun-centered view
+let zoomTransitionProgress = 0; // 0 = sun-centered, 1 = earth-centered
+const ZOOM_TRANSITION_DURATION = 15; // frames (0.5s at 30fps)
+
+// Earth-centered view at 200 LD
 const LUNAR_DISTANCE_KM = 384400;
 const KM_PER_AU = 149597870.7;
-let AU_SCALE = 120; // Pixels per AU
+const VIEW_RADIUS_LD = 200; // Show 200 lunar distances radius
+const VIEW_RADIUS_AU = (VIEW_RADIUS_LD * LUNAR_DISTANCE_KM) / KM_PER_AU;
+let AU_SCALE = 120; // Pixels per AU (will be recalculated)
+let AU_SCALE_WIDE = 120; // For sun-centered view (shows Mars)
+let AU_SCALE_CLOSE = 120; // For earth-centered view (200 LD)
 
 const API_KEY = 'QnjB1SuXKjaFibxhV3rVmUcqxzHsKB80hSAWncBO';
 
@@ -90,12 +99,21 @@ const sketch = function(p) {
         canvas.parent('solar-system-canvas');
         p.frameRate(30);
 
-        // Calculate AU_SCALE to show inner solar system (out to ~2 AU to include Mars)
+        // Calculate AU_SCALE for both views
         const viewSize = Math.min(width, height) * 0.9;
-        AU_SCALE = viewSize / 4; // Show -2 to +2 AU (4 AU total width)
+
+        // Wide view: show out to Mars orbit (~2 AU radius)
+        AU_SCALE_WIDE = viewSize / 4; // Show -2 to +2 AU (4 AU total)
+
+        // Close view: Earth-centered at 200 LD radius
+        AU_SCALE_CLOSE = viewSize / (VIEW_RADIUS_AU * 2); // Diameter = 2 * radius
+
+        // Start with wide view
+        AU_SCALE = AU_SCALE_WIDE;
 
         console.log('Solar system canvas created:', width, 'x', height);
-        console.log(`AU_SCALE: ${AU_SCALE.toFixed(1)} pixels per AU`);
+        console.log(`Wide view AU_SCALE: ${AU_SCALE_WIDE.toFixed(1)} pixels per AU`);
+        console.log(`Close view AU_SCALE: ${AU_SCALE_CLOSE.toFixed(1)} pixels per AU`);
 
         // Load asteroid data
         loadAsteroidData();
@@ -105,29 +123,10 @@ const sketch = function(p) {
         // Background - deep space
         p.background(5, 8, 20);
 
-        // Add stars
-        p.randomSeed(42);
-        for (let i = 0; i < 200; i++) {
-            const sx = p.random(p.width);
-            const sy = p.random(p.height);
-            const brightness = p.random(100, 255);
-            p.stroke(brightness);
-            p.strokeWeight(p.random(1, 2));
-            p.point(sx, sy);
-        }
-
-        // Calculate current simulation time based on date offset
-        if (isPlaying && startDate && endDate) {
-            const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
-            currentDateOffset += 0.1; // Advance by 0.1 days per frame
-            if (currentDateOffset > totalDays) currentDateOffset = 0; // Loop
-        }
-
         // Current date for orbital calculations
         const currentDate = startDate ? new Date(startDate.getTime() + currentDateOffset * 24 * 60 * 60 * 1000) : null;
 
-        // Calculate Earth's position (for distance circles and zap lines)
-        // Earth uses J2000.0 epoch
+        // Calculate Earth's position first for parallax
         let earthPos = null;
         const earthPlanet = planets.find(p => p.name === 'Earth');
         if (earthPlanet && currentDate) {
@@ -140,9 +139,67 @@ const sketch = function(p) {
             earthPos = { x: pos.x * AU_SCALE, y: pos.y * AU_SCALE };
         }
 
-        // Transform to center on Sun (fixed frame of reference)
+        // Add parallax starfield - stars move slowly with Earth's motion
+        p.randomSeed(42);
+        for (let i = 0; i < 200; i++) {
+            const baseX = p.random(p.width);
+            const baseY = p.random(p.height);
+
+            // Parallax effect: distant stars move very slowly with Earth
+            const parallaxFactor = 0.02; // Stars are "infinitely" far away
+            const sx = baseX - (earthPos ? earthPos.x * parallaxFactor : 0);
+            const sy = baseY - (earthPos ? earthPos.y * parallaxFactor : 0);
+
+            // Wrap stars around the screen
+            const wrappedX = ((sx % p.width) + p.width) % p.width;
+            const wrappedY = ((sy % p.height) + p.height) % p.height;
+
+            const brightness = p.random(100, 255);
+            p.stroke(brightness);
+            p.strokeWeight(p.random(1, 2));
+            p.point(wrappedX, wrappedY);
+        }
+
+        // Handle zoom transition when play is pressed
+        if (isPlaying && !isEarthCentered && zoomTransitionProgress < 1) {
+            zoomTransitionProgress += 1 / ZOOM_TRANSITION_DURATION;
+            if (zoomTransitionProgress >= 1) {
+                zoomTransitionProgress = 1;
+                isEarthCentered = true;
+            }
+        }
+
+        // Interpolate between wide and close AU_SCALE using easeInOutCubic
+        const t = zoomTransitionProgress;
+        const easedT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        AU_SCALE = AU_SCALE_WIDE + (AU_SCALE_CLOSE - AU_SCALE_WIDE) * easedT;
+
+        // Calculate current simulation time based on date offset
+        if (isPlaying && startDate && endDate) {
+            const totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+            currentDateOffset += 0.1; // Advance by 0.1 days per frame
+            if (currentDateOffset > totalDays) currentDateOffset = 0; // Loop
+        }
+
+        // Transform to center view
         p.push();
-        p.translate(p.width / 2 + offsetX, p.height / 2 + offsetY);
+        if (isEarthCentered && earthPos) {
+            // Earth-centered view: keep Earth in the middle
+            p.translate(p.width / 2 - earthPos.x * zoom + offsetX, p.height / 2 - earthPos.y * zoom + offsetY);
+        } else if (zoomTransitionProgress > 0 && zoomTransitionProgress < 1 && earthPos) {
+            // During transition: interpolate from sun-centered to earth-centered
+            const sunCenterX = p.width / 2 + offsetX;
+            const sunCenterY = p.height / 2 + offsetY;
+            const earthCenterX = p.width / 2 - earthPos.x * zoom + offsetX;
+            const earthCenterY = p.height / 2 - earthPos.y * zoom + offsetY;
+            p.translate(
+                sunCenterX + (earthCenterX - sunCenterX) * easedT,
+                sunCenterY + (earthCenterY - sunCenterY) * easedT
+            );
+        } else {
+            // Sun-centered view
+            p.translate(p.width / 2 + offsetX, p.height / 2 + offsetY);
+        }
         p.scale(zoom);
 
         // Draw Sun (will be off-center now since we're Earth-centered)
@@ -162,8 +219,8 @@ const sketch = function(p) {
             if (showOrbitLines) {
                 p.push();
                 p.noFill();
-                p.stroke(255, 255, 255, 30);
-                p.strokeWeight(1);
+                p.stroke(255, 255, 255, 100);
+                p.strokeWeight(2);
 
                 // Draw ellipse
                 const a = planet.a * AU_SCALE;
@@ -189,7 +246,9 @@ const sketch = function(p) {
 
                 // Draw planet
                 p.noStroke();
-                p.fill(planet.color);
+                const planetColor = p.color(planet.color);
+                planetColor.setAlpha(180);
+                p.fill(planetColor);
                 p.circle(px, py, planet.size);
 
                 // Draw label (always show for planets)
@@ -200,30 +259,28 @@ const sketch = function(p) {
             }
         });
 
-        // Draw distance circles from Earth (every 10 lunar distances up to 50)
+        // Draw distance circles from Earth (every 50 LD up to 200)
         if (earthPos) {
             p.push();
             p.noFill();
             p.strokeWeight(1);
 
-            // Draw circles at 10, 20, 30, 40, 50 lunar distances
-            for (let ld = 10; ld <= 50; ld += 10) {
+            // Draw circles at 50, 100, 150, 200 lunar distances
+            for (let ld = 50; ld <= 200; ld += 50) {
                 const distanceKm = ld * LUNAR_DISTANCE_KM;
                 const distanceAU = distanceKm / KM_PER_AU;
                 const radiusPixels = distanceAU * AU_SCALE;
 
                 // Color gets fainter with distance
-                const alpha = 100 - (ld / 10) * 15;
+                const alpha = 80 - (ld / 50) * 10;
                 p.stroke(100, 200, 255, alpha);
                 p.circle(earthPos.x, earthPos.y, radiusPixels * 2);
 
-                // Label the circle
-                if (showLabels) {
-                    p.fill(100, 200, 255, alpha + 60);
-                    p.textAlign(p.CENTER, p.CENTER);
-                    p.textSize(10);
-                    p.text(`${ld} LD`, earthPos.x + radiusPixels, earthPos.y);
-                }
+                // Label the circle (always visible)
+                p.fill(100, 200, 255, alpha + 60);
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(10);
+                p.text(`${ld} LD`, earthPos.x + radiusPixels, earthPos.y);
             }
             p.pop();
         }
@@ -234,26 +291,6 @@ const sketch = function(p) {
                 if (!asteroid.orbit) return;
 
                 const orbit = asteroid.orbit;
-
-                // Draw orbit ellipse
-                if (showOrbitLines && orbit.a < 3.0) { // Only show if reasonable size
-                    p.push();
-                    p.noFill();
-                    p.stroke(asteroid.is_hazardous ? p.color(220, 47, 2, 20) : p.color(255, 214, 10, 20));
-                    p.strokeWeight(1);
-
-                    const a = orbit.a * AU_SCALE;
-                    const b = orbit.a * Math.sqrt(1 - orbit.e * orbit.e) * AU_SCALE;
-                    const c = orbit.a * orbit.e * AU_SCALE;
-
-                    // Rotate by argument of perihelion
-                    p.push();
-                    p.rotate(orbit.omega * p.PI / 180);
-                    p.translate(-c, 0);
-                    p.ellipse(0, 0, a * 2, b * 2);
-                    p.pop();
-                    p.pop();
-                }
 
                 // Calculate asteroid position - use close approach data when near Earth
                 let ax, ay;
@@ -355,14 +392,14 @@ const sketch = function(p) {
                         // Pulsing effect during close approach
                         const pulse = 0.7 + 0.3 * Math.sin((p.frameCount % 30) / 30 * p.TWO_PI);
                         if (asteroid.is_hazardous) {
-                            p.fill(220 * pulse, 47, 2);
+                            p.fill(220 * pulse, 47, 2, 200);
                         } else {
-                            p.fill(0, 255 * pulse, 100);
+                            p.fill(0, 255 * pulse, 100, 200);
                         }
                     } else if (asteroid.is_hazardous) {
-                        p.fill(220, 47, 2);
+                        p.fill(220, 47, 2, 150);
                     } else {
-                        p.fill(255, 214, 10);
+                        p.fill(255, 214, 10, 150);
                     }
 
                     p.noStroke();
@@ -656,6 +693,9 @@ document.addEventListener('DOMContentLoaded', function() {
         offsetY = 0;
         currentDateOffset = 0;
         isPlaying = false;
+        isEarthCentered = false;
+        zoomTransitionProgress = 0;
+        AU_SCALE = AU_SCALE_WIDE;
         const playBtn = document.getElementById('play-pause');
         playBtn.textContent = '▶ Play';
         playBtn.classList.remove('active');
