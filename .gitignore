@@ -6,10 +6,5 @@ __pycache__/
 # Environment variables
 .env
 
-# Generated data
-events.json
-orbital_data.json
-
 # OS files
 .DS_Store
-*.png
