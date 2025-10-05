@@ -216,9 +216,9 @@ The ground is trembling. I can
             age: 15,
             entry: `This is ridiculous. Writing in a journal when the world is ending is possibly the most pointless exercise in human history. And yet here I am, pen in hand, because Mrs. Van Der Merwe's voice is in my head saying "write what you feel, Lerato" as if feelings matter when you're about to be vaporized.
 
-They cancelled school on Monday. Some families left - packed their cars with photograph albums and family bibles and drove inland as if distance might save them. The rest of us stayed. Where exactly do you go when the scientists can't decide if it's the whole world ending or just our particular corner of it?
+They cancelled school on Monday. Some families left - packed their cars with photograph albums and family bibles and drove to Johannesburg as if a hundred kilometers might save them. The rest of us stayed. Where exactly do you go when the scientists can't decide if it's the whole world ending or just our particular corner of it?
 
-Zinhle and I went to the beach yesterday. The ocean was absurdly calm, indifferent to ${asteroidName} hurtling toward it. We built a sandcastle, which was childish and perfect. We gave it turrets and a moat and everything. The tide came in and took it, the way tides do. We didn't mind.
+Zinhle and I went to the Voortrekker Monument yesterday. We climbed to the top even though they'd closed it. The security guard had already left. From up there you can see the whole city spread out, the jacaranda trees lining the streets in their October purple. It was absurdly beautiful, indifferent to ${asteroidName} hurtling toward it. We sat up there for hours. Didn't say much. Didn't need to.
 
 Father's workshop has gone silent. For sixteen years I've fallen asleep to the sound of him building things - cabinets, chairs, toys for the neighbor's children. Now he just sits with us, opening his mouth to speak, then closing it again. I think he wants to impart some final piece of fatherly wisdom. But what is there left to say that isn't either a lie or utterly obvious?
 
