@@ -17,6 +17,9 @@ let endDate = null;
 let currentDateOffset = -14; // Days from start date (starts 2 weeks before)
 let isPlaying = false;
 
+// Hover and interaction
+let hoveredAsteroid = null;
+
 // View mode and zoom animation
 let isEarthCentered = false; // Start with sun-centered view
 let zoomTransitionProgress = 0; // 0 = sun-centered, 1 = earth-centered
@@ -348,6 +351,10 @@ const sketch = function(p) {
                     ay = orbitPos.y * AU_SCALE;
                 }
 
+                // Store asteroid screen position for hover detection
+                asteroid.screenX = ax;
+                asteroid.screenY = ay;
+
                 // Only draw if within reasonable bounds
                 if (Math.abs(ax) < 1000 && Math.abs(ay) < 1000) {
                     // Check if asteroid is within 2 days of close approach
@@ -431,6 +438,78 @@ const sketch = function(p) {
         }
 
         p.pop();
+
+        // Check for asteroid hover (in screen coordinates)
+        hoveredAsteroid = null;
+        if (asteroidData.length > 0) {
+            // Get mouse position in transformed space
+            const transformedMouseX = (p.mouseX - p.width / 2) / zoom;
+            const transformedMouseY = (p.mouseY - p.height / 2) / zoom;
+
+            // Adjust for view offset
+            let mouseWorldX, mouseWorldY;
+            if (isEarthCentered && earthPos) {
+                mouseWorldX = transformedMouseX + earthPos.x;
+                mouseWorldY = transformedMouseY + earthPos.y;
+            } else if (zoomTransitionProgress > 0 && zoomTransitionProgress < 1 && earthPos) {
+                const t = zoomTransitionProgress;
+                const easedT = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                const offsetAdjustX = earthPos.x * easedT;
+                const offsetAdjustY = earthPos.y * easedT;
+                mouseWorldX = transformedMouseX + offsetAdjustX;
+                mouseWorldY = transformedMouseY + offsetAdjustY;
+            } else {
+                mouseWorldX = transformedMouseX;
+                mouseWorldY = transformedMouseY;
+            }
+
+            asteroidData.forEach(asteroid => {
+                if (asteroid.screenX !== undefined && asteroid.screenY !== undefined) {
+                    const dx = asteroid.screenX - mouseWorldX;
+                    const dy = asteroid.screenY - mouseWorldY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const hoverRadius = 10 / zoom; // Adjust for zoom
+
+                    if (distance < hoverRadius) {
+                        hoveredAsteroid = asteroid;
+                    }
+                }
+            });
+        }
+
+        // Draw hover tooltip
+        if (hoveredAsteroid) {
+            p.push();
+            p.fill(0, 0, 0, 220);
+            p.noStroke();
+            const tooltipWidth = 200;
+            const tooltipHeight = 60;
+            const tooltipX = Math.min(p.mouseX + 10, p.width - tooltipWidth - 10);
+            const tooltipY = Math.max(p.mouseY - tooltipHeight - 10, 10);
+            p.rect(tooltipX, tooltipY, tooltipWidth, tooltipHeight, 5);
+
+            p.fill(255);
+            p.textAlign(p.LEFT, p.TOP);
+            p.textSize(12);
+            p.textStyle(p.BOLD);
+            p.text(hoveredAsteroid.name, tooltipX + 10, tooltipY + 10);
+
+            p.textStyle(p.NORMAL);
+            p.textSize(10);
+            if (hoveredAsteroid.closeApproachDate) {
+                const dateStr = hoveredAsteroid.closeApproachDate.toISOString().split('T')[0];
+                p.text(`Close approach: ${dateStr}`, tooltipX + 10, tooltipY + 30);
+            }
+            if (hoveredAsteroid.missDistanceLunar) {
+                p.text(`Distance: ${hoveredAsteroid.missDistanceLunar.toFixed(2)} LD`, tooltipX + 10, tooltipY + 45);
+            }
+
+            // Change cursor
+            p.cursor(p.HAND);
+            p.pop();
+        } else {
+            p.cursor(p.ARROW);
+        }
 
         // Draw legend
         drawLegend(p);
@@ -547,21 +626,42 @@ const sketch = function(p) {
     }
 
     // Mouse interaction
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let hasDragged = false;
+
     p.mousePressed = function() {
         if (p.mouseX > 0 && p.mouseX < p.width && p.mouseY > 0 && p.mouseY < p.height) {
             isDragging = true;
+            hasDragged = false;
             lastMouseX = p.mouseX;
             lastMouseY = p.mouseY;
+            dragStartX = p.mouseX;
+            dragStartY = p.mouseY;
             return false;
         }
     };
 
     p.mouseReleased = function() {
+        // Check if this was a click (minimal movement) on an asteroid
+        if (!hasDragged && hoveredAsteroid) {
+            console.log('Click detected on asteroid');
+            scrollToAsteroidInList(hoveredAsteroid);
+        }
         isDragging = false;
+        hasDragged = false;
     };
 
     p.mouseDragged = function() {
         if (isDragging) {
+            const dragDistance = Math.sqrt(
+                Math.pow(p.mouseX - dragStartX, 2) +
+                Math.pow(p.mouseY - dragStartY, 2)
+            );
+            // If dragged more than 5 pixels, consider it a drag not a click
+            if (dragDistance > 5) {
+                hasDragged = true;
+            }
             offsetX += (p.mouseX - lastMouseX);
             offsetY += (p.mouseY - lastMouseY);
             lastMouseX = p.mouseX;
@@ -589,6 +689,44 @@ if (document.readyState === 'loading') {
 } else {
     new p5(sketch);
     console.log('p5.js sketch initialized');
+}
+
+// Scroll to asteroid in the events list
+function scrollToAsteroidInList(asteroid) {
+    console.log('Scrolling to asteroid:', asteroid.name);
+
+    // Find the asteroid card in the events list
+    const eventFeed = document.getElementById('event-feed');
+    if (!eventFeed) {
+        console.log('Event feed not found');
+        return;
+    }
+
+    // Find all event items
+    const eventItems = eventFeed.querySelectorAll('.event');
+    console.log('Found event items:', eventItems.length);
+
+    for (const item of eventItems) {
+        // Check if this item's name contains the asteroid name
+        const nameEl = item.querySelector('.event-name');
+        if (nameEl) {
+            console.log('Checking:', nameEl.textContent, 'against', asteroid.name);
+            if (nameEl.textContent.includes(asteroid.name)) {
+                console.log('Found match! Scrolling...');
+                // Scroll to this item
+                item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Highlight the item temporarily
+                const originalBg = item.style.background;
+                item.style.background = 'rgba(0, 255, 100, 0.3)';
+                setTimeout(() => {
+                    item.style.background = originalBg;
+                }, 2000);
+
+                break;
+            }
+        }
+    }
 }
 
 // Load asteroid orbital data from NASA API
